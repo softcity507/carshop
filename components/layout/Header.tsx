@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import logo from "@/public/images/logo.png";
+import { useAuth } from '@/hooks/useAuth';
+import { AuthService } from '@/services/auth.service';
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const { user, setUser } = useAuth();
+  const admin = user?.role === 'admin';
 
-  const admin = false;
+  const handleLogout = async () => {
+    await AuthService.logout();
+    setUser(null);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl">
@@ -67,19 +77,29 @@ export function Header() {
             Contact
           </Link>
 
-          <Link
-            href="/login"
-            className="rounded-full border border-blue-500 px-5 py-2 text-blue-400 transition hover:bg-blue-500 hover:text-white"
-          >
-            Login
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="rounded-full bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-500"
-          >
-            User Dashboard
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-500"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="rounded-full border border-blue-500 px-5 py-2 text-blue-400 transition hover:bg-blue-500 hover:text-white"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full border border-blue-500 px-5 py-2 text-blue-400 transition hover:bg-blue-500 hover:text-white"
+            >
+              Login
+            </Link>
+          )}
 
           {admin && (
             <Link
@@ -139,21 +159,34 @@ export function Header() {
 
             <hr className="my-4 border-white/10" />
 
-            <Link
-              href="/login"
-              className="rounded-lg border border-blue-500 px-4 py-3 text-center text-blue-400"
-              onClick={() => setOpen(false)}
-            >
-              Login
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="mt-3 rounded-lg bg-blue-600 px-4 py-3 text-center text-white"
-              onClick={() => setOpen(false)}
-            >
-              User Dashboard
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg bg-blue-600 px-4 py-3 text-center text-white"
+                  onClick={() => setOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    handleLogout();
+                  }}
+                  className="mt-3 rounded-lg border border-blue-500 px-4 py-3 text-center text-blue-400 hover:bg-blue-500 hover:text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg border border-blue-500 px-4 py-3 text-center text-blue-400"
+                onClick={() => setOpen(false)}
+              >
+                Login
+              </Link>
+            )}
 
             {admin && (
               <Link
