@@ -37,7 +37,7 @@ export default function LoginPage() {
       setUser(result.user); 
       console.log('Google Sign-In successful:', result.user);
       router.push('/dashboard');
-    } catch (err) {
+    } catch (err:any) {
        console.error("Firebase Google Login Error:", error);
   console.error("Error Code:", err.code);
   console.error("Error Message:", err.message);
