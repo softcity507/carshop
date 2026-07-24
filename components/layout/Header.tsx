@@ -76,15 +76,17 @@ export function Header() {
           >
             Contact
           </Link>
-
+           {admin && (
+            <Link
+              href="/admin"
+              className="rounded-full bg-[#4CBDAD] px-5 py-2 text-white transition hover:bg-[#71d4c7]/90"
+            >
+              Admin Dashboard
+            </Link>
+          )}
           {user ? (
             <>
-              <Link
-                href="/dashboard"
-                className="rounded-full bg-blue-600 px-5 py-2 text-white transition hover:bg-blue-500"
-              >
-                Dashboard
-              </Link>
+               
               <button
                 onClick={handleLogout}
                 className="rounded-full border border-blue-500 px-5 py-2 text-blue-400 transition hover:bg-blue-500 hover:text-white"
@@ -101,14 +103,7 @@ export function Header() {
             </Link>
           )}
 
-          {admin && (
-            <Link
-              href="/admin"
-              className="rounded-full bg-violet-600 px-5 py-2 text-white transition hover:bg-violet-500"
-            >
-              Admin Dashboard
-            </Link>
-          )}
+          
         </nav>
 
         {/* Mobile Button */}

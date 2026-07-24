@@ -1,5 +1,6 @@
 import { AuthUser } from '@/types/auth';
 import { auth } from '@/firebase/firebase';
+import { db } from '@/firebase/firestore';
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
@@ -8,8 +9,10 @@ import {
   signOut,
   setPersistence,
   updateProfile,
+  getAdditionalUserInfo,
   GoogleAuthProvider,
 } from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 const USER_KEY = 'carhub_user';
 const TOKEN_KEY = 'carhub_token';
@@ -32,6 +35,27 @@ function clearSession() {
   }
 }
 
+async function saveCarUser(
+  uid: string,
+  email: string | null,
+  displayName: string | null,
+  options?: { setCreatedAt?: boolean }
+) {
+  const userRef = doc(db, 'carUser', uid);
+  const userData: Record<string, unknown> = {
+    email,
+    displayName,
+    role: 'user',
+    lastLogin: serverTimestamp(),
+  };
+
+  if (options?.setCreatedAt) {
+    userData.createdAt = serverTimestamp();
+  }
+
+  await setDoc(userRef, userData, { merge: true });
+}
+
 export const AuthService = {
   async signup(name: string, email: string, password: string) {
     await setPersistence(auth, browserLocalPersistence);
@@ -47,6 +71,13 @@ export const AuthService = {
       displayName: userCredential.user.displayName,
       role: 'user',
     };
+
+    await saveCarUser(
+      authUser.uid,
+      authUser.email,
+      authUser.displayName ?? name.trim(),
+      { setCreatedAt: true }
+    );
 
     storeSession(authUser, token);
 
@@ -65,6 +96,16 @@ export const AuthService = {
       role: 'user',
     };
 
+    const userRef = doc(db, 'carUser', authUser.uid);
+    const userSnapshot = await getDoc(userRef);
+
+    if (userSnapshot.exists()) {
+      const data = userSnapshot.data();
+      authUser.role = data.role === 'admin' ? 'admin' : 'user';
+    } else {
+      await saveCarUser(authUser.uid, authUser.email, authUser.displayName, { setCreatedAt: false });
+    }
+
     storeSession(authUser, token);
 
     return { success: true, user: authUser, token };
@@ -74,6 +115,8 @@ export const AuthService = {
     await setPersistence(auth, browserLocalPersistence);
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
+    const additionalInfo = getAdditionalUserInfo(userCredential);
+    const isNewGoogleUser = additionalInfo?.isNewUser ?? false;
 
     const token = await userCredential.user.getIdToken();
     const authUser: AuthUser = {
@@ -82,6 +125,21 @@ export const AuthService = {
       displayName: userCredential.user.displayName,
       role: 'user',
     };
+
+    const userRef = doc(db, 'carUser', authUser.uid);
+    const userSnapshot = await getDoc(userRef);
+
+    if (userSnapshot.exists()) {
+      const data = userSnapshot.data();
+      authUser.role = data.role === 'admin' ? 'admin' : 'user';
+    } else {
+      await saveCarUser(
+        authUser.uid,
+        authUser.email,
+        authUser.displayName,
+        { setCreatedAt: isNewGoogleUser }
+      );
+    }
 
     storeSession(authUser, token);
 

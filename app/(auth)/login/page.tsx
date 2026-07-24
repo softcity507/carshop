@@ -9,12 +9,13 @@ import { User, Lock, Eye, EyeOff, Apple } from "lucide-react";
 import logo from "@/public/images/logo.png";
 import { AuthService } from '@/services/auth.service';
 import { useAuth } from '@/hooks/useAuth';
-
+import { toast } from "react-toastify";
+ 
 const initialState = {
-    name: '',
-    email: '',
-    password: '',
-  };
+  name: '',
+  email: '',
+  password: '',
+};
 
 export default function LoginPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -27,33 +28,6 @@ export default function LoginPage() {
 
   const { setUser } = useAuth();
   const router = useRouter();
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-
-    try {
-      const result = await AuthService.loginWithGoogle();
-      setUser(result.user); 
-      console.log('Google Sign-In successful:', result.user);
-      router.push('/dashboard');
-    } catch (err:any) {
-       console.error("Firebase Google Login Error:", error);
-  console.error("Error Code:", err.code);
-  console.error("Error Message:", err.message);
-
-  setError(err.message);
-      if (err instanceof FirebaseError) {
-        setError('Unable to sign in with Google. Please try again.');
-
-      } else {
-        setError(err instanceof Error ? err.message : 'Unable to sign in with Google. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const validateForm = () => {
     if (isSignup && name.trim().length < 4) {
       setError('Name must be at least 4 characters.');
@@ -87,6 +61,43 @@ export default function LoginPage() {
 
     return true;
   };
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await AuthService.loginWithGoogle();
+      setUser(result.user);
+      console.log('Google Sign-In successful:', result.user);
+      if (result.user.role === 'admin') {
+        router.push('/dashboard');
+        toast.success('Admin Login Successful', {
+          position: 'top-right',
+        });
+      } else {
+        router.push('/');
+        toast.success('User Login Successful', {
+          position: 'top-right',
+        });
+      }
+     } catch (err: any) {
+      console.error("Firebase Google Login Error:", error);
+      console.error("Error Code:", err.code);
+      console.error("Error Message:", err.message);
+
+      setError(err.message);
+      if (err instanceof FirebaseError) {
+        setError('Unable to sign in with Google. Please try again.');
+
+      } else {
+        setError(err instanceof Error ? err.message : 'Unable to sign in with Google. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -107,7 +118,7 @@ export default function LoginPage() {
         const result = await AuthService.login(email, password);
         setUser(result.user);
       }
-      
+
 
       router.push('/dashboard');
     } catch (err) {
