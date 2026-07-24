@@ -1,3 +1,6 @@
+import { auth } from '@/firebase/firebase';
+import axios from 'axios';
+
 export interface CreateUserPayload {
   name: string;
   email: string;
@@ -12,36 +15,48 @@ export interface UpdateUserPayload {
   role?: 'user' | 'admin';
 }
 
-function getAuthToken() {
+async function getAuthToken() {
   if (typeof window === 'undefined') return null;
+
+  if (auth.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    window.sessionStorage.setItem('carhub_token', token);
+    window.localStorage.setItem('carhub_token', token);
+    return token;
+  }
+
   return window.sessionStorage.getItem('carhub_token') || window.localStorage.getItem('carhub_token');
 }
 
 async function apiRequest<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const response = await axios.request<T>({
+      url: path,
+      method: method as any,
+      data: body,
+      headers,
+    });
+
+    console.log(`API Request: ${method} ${path}`, { body, status: response.status });
+    return response.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const resp = err.response;
+      const message = resp?.data?.error ?? resp?.data ?? err.message;
+      throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
+    }
+    throw err;
   }
-
-  const response = await fetch(path, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'API request failed');
-  }
-
-  return response.json();
 }
 
 export const UserService = {
-  async getUsers() {
-    return apiRequest<Array<Record<string, unknown>>>('/api/users', 'GET');
+  async getUsers<T = Record<string, unknown>>() {
+    return apiRequest<T[]>('/api/users', 'GET');
   },
 
   async createUser(payload: CreateUserPayload) {
@@ -56,3 +71,5 @@ export const UserService = {
     return apiRequest('/api/users', 'DELETE', { uid });
   },
 };
+ 
+ 

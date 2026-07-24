@@ -14,7 +14,6 @@ export function Header() {
   const router = useRouter();
   const { user, setUser } = useAuth();
   const admin = user?.role === 'admin';
-
   const handleLogout = async () => {
     await AuthService.logout();
     setUser(null);

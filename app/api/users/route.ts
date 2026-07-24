@@ -117,6 +117,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing user uid' }, { status: 400 });
   }
 
+  if (targetUid === uid) {
+    return NextResponse.json({ error: 'Administrators cannot delete their own account' }, { status: 400 });
+  }
+
   await adminAuth.deleteUser(targetUid);
   await adminDb.collection(USERS_COLLECTION).doc(targetUid).delete();
 

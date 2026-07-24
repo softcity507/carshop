@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/firestore';
 import { useAuth } from '@/hooks/useAuth';
+import { UserService } from '@/services/user.service';
 
 interface CarUser {
   uid: string;
@@ -27,17 +26,14 @@ export function UserList() {
   const [users, setUsers] = useState<CarUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
 
-  const {user} = useAuth();
+  const { user: currentUser, isAuthReady } = useAuth();
 
   useEffect(() => {
     async function loadUsers() {
       try {
-        const snapshot = await getDocs(collection(db, 'carUser'));
-        const loadedUsers: CarUser[] = snapshot.docs.map((doc) => ({
-          uid: doc.id,
-          ...doc.data(),
-        } as CarUser));
+        const loadedUsers = await UserService.getUsers<CarUser>();
 
         setUsers(
           loadedUsers.sort((a, b) => {
@@ -49,15 +45,45 @@ export function UserList() {
         );
       } catch (err) {
         console.error('Failed to load users', err);
-        setError('Unable to load users. Please refresh the page.');
+        setError(err instanceof Error ? err.message : 'Unable to load users. Please refresh the page.');
       } finally {
         setLoading(false);
       }
     }
     
-    user?.role==='admin' &&
-    loadUsers();
-  }, []);
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (currentUser?.role === 'admin') {
+      loadUsers();
+    }
+  }, [currentUser?.role, isAuthReady]);
+
+  async function handleDeleteUser(targetUser: CarUser) {
+    if (targetUser.uid === currentUser?.uid) {
+      setError('You cannot delete your own account.');
+      return;
+    }
+
+    const name = targetUser.displayName ?? targetUser.email ?? 'this user';
+    if (!window.confirm(`Delete ${name}? This permanently removes the account and its user profile.`)) {
+      return;
+    }
+
+    setDeletingUid(targetUser.uid);
+    setError(null);
+
+    try {
+      await UserService.deleteUser(targetUser.uid);
+      setUsers((currentUsers) => currentUsers.filter((user) => user.uid !== targetUser.uid));
+    } catch (err) {
+      console.error('Failed to delete user', err);
+      setError('Unable to delete this user. Please try again.');
+    } finally {
+      setDeletingUid(null);
+    }
+  }
 
   return (
     <div className="rounded-3xl bg-slate-900/95 p-6 shadow-2xl ring-1 ring-white/10 backdrop-blur-xl">
@@ -85,18 +111,29 @@ export function UserList() {
                 <th className="px-4 py-4">Name</th>
                 <th className="px-4 py-4">Email</th>
                 <th className="px-4 py-4">Role</th>
-                 <th className="px-4 py-4">Last Login</th>
+                <th className="px-4 py-4">Last Login</th>
+                <th className="px-4 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {users.map((user) => (
-                <tr key={user.uid} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-4 font-medium text-white">{user.displayName ?? 'Unknown'}</td>
-                  <td className="px-4 py-4 text-slate-300">{user.email ?? 'No email'}</td>
-                  <td className={`px-4 py-4 font-semibold ${user.role === 'admin' ? 'text-emerald-300' : 'text-slate-200'}`}>
-                    {user.role ?? 'user'}
+              {users.map((listedUser) => (
+                <tr key={listedUser.uid} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-4 font-medium text-white">{listedUser.displayName ?? 'Unknown'}</td>
+                  <td className="px-4 py-4 text-slate-300">{listedUser.email ?? 'No email'}</td>
+                  <td className={`px-4 py-4 font-semibold ${listedUser.role === 'admin' ? 'text-emerald-300' : 'text-slate-200'}`}>
+                    {listedUser.role ?? 'user'}
                   </td>
-                   <td className="px-4 py-4 text-slate-400">{formatTimestamp(user.lastLogin)}</td>
+                  <td className="px-4 py-4 text-slate-400">{formatTimestamp(listedUser.lastLogin)}</td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUser(listedUser)}
+                      disabled={deletingUid === listedUser.uid || listedUser.uid === currentUser?.uid}
+                      className="rounded-lg bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-200 ring-1 ring-inset ring-rose-500/30 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingUid === listedUser.uid ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

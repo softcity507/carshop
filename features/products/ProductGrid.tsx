@@ -1,6 +1,15 @@
 import React from 'react';
 
-const products = [
+export interface ProductCard {
+  name: string;
+  description: string;
+  price: string;
+  badge: string;
+  imageUrl?: string;
+  specs?: string[];
+}
+
+const defaultProducts: ProductCard[] = [
   {
     name: 'Falcon Evo X',
     description: 'Sporty sedan with state-of-the-art performance and luxury touches.',
@@ -39,11 +48,17 @@ const products = [
   },
 ];
 
-export function ProductGrid() {
+export function ProductGrid({ products = defaultProducts }: { products?: ProductCard[] }) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
       {products.map((product) => (
         <article key={product.name} className="group overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl transition hover:-translate-y-1 hover:border-red-500/50">
+          {product.imageUrl && (
+            <div
+              className="-mx-6 -mt-6 mb-6 h-56 bg-cover bg-center transition duration-500 group-hover:scale-[1.03]"
+              style={{ backgroundImage: `url(${product.imageUrl})` }}
+            />
+          )}
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-red-400">{product.badge}</p>
@@ -53,6 +68,16 @@ export function ProductGrid() {
           </div>
 
           <p className="mt-5 text-sm leading-6 text-slate-300">{product.description}</p>
+
+          {product.specs && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {product.specs.map((spec) => (
+                <span key={spec} className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-slate-300">
+                  {spec}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="mt-6 flex items-center justify-between gap-4">
             <span className="text-lg font-semibold text-white">{product.price}</span>
