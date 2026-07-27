@@ -1,5 +1,5 @@
 import { Footer } from '@/components/layout/Footer';
-import { ProductGrid } from '@/features/products/ProductGrid';
+import { FeaturedProducts } from '@/features/products/FeaturedProducts';
 
 export default function HomePage() {
   return (
@@ -14,7 +14,7 @@ export default function HomePage() {
         
         <section className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Featured Vehicles</h2>
-          <ProductGrid />
+          <FeaturedProducts type="car" />
         </section>
       </main>
       <Footer />

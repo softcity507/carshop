@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase admin service account keys — contain a private key, never commit
+serviceAccountKey.json
+firebase-service-account.json
+*-firebase-adminsdk-*.json
