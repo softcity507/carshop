@@ -17,9 +17,8 @@ import {
   type ProductType,
 } from '@/types/product';
 
-const inputClass =
-  'w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-red-500/60 focus:ring-2 focus:ring-red-500/20';
-const labelClass = 'block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400';
+const inputClass = 'field-input';
+const labelClass = 'field-label';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (

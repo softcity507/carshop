@@ -4,8 +4,8 @@ import { DashboardOverview } from '@/features/dashboard/DashboardOverview';
 export default function DashboardPage() {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      <p className="text-gray-600 mb-6">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Admin stats overview.</p>
+      <h1 className="page-title">Dashboard</h1>
+      <p className="page-subtitle mb-8">Sales, orders and inventory at a glance.</p>
       <DashboardOverview />
     </div>
   );

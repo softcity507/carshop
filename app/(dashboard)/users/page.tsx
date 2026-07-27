@@ -4,8 +4,8 @@ import { UserList } from '@/features/users/UserList';
 export default function DashboardUsersPage() {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">User Management</h1>
-      <p className="text-gray-600 mb-6">Lorem ipsum dolor sit amet, manage registered user accounts and permissions.</p>
+      <h1 className="page-title">User Management</h1>
+      <p className="page-subtitle mb-8">Manage registered accounts, roles and permissions.</p>
       <UserList />
     </div>
   );

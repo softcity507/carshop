@@ -124,7 +124,7 @@ export function ProductManager() {
 
   if (isAuthReady && !isAdmin) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-slate-900/90 px-6 py-12 text-center text-sm text-slate-400">
+      <div className="card px-6 py-12 text-center text-sm text-muted">
         You need an admin account to manage products.
       </div>
     );
@@ -145,11 +145,11 @@ export function ProductManager() {
         />
       )}
 
-      <div className="rounded-3xl border border-white/10 bg-slate-900/95 p-6 shadow-2xl backdrop-blur-xl">
+      <div className="card p-6">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">Inventory</h2>
-            <p className="mt-2 text-sm text-slate-400">
+            <h2 className="text-xl font-bold uppercase tracking-tight text-heading">Inventory</h2>
+            <p className="mt-1 text-sm text-muted">
               {loading
                 ? 'Loading products…'
                 : `${counts.cars} car${counts.cars === 1 ? '' : 's'} · ${counts.parts} part${counts.parts === 1 ? '' : 's'}${
@@ -159,14 +159,14 @@ export function ProductManager() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-2xl bg-slate-950/70 p-1 ring-1 ring-white/10">
+            <div className="flex rounded-lg border border-line bg-chip p-1">
               {filters.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => setFilter(option.value)}
-                  className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition ${
-                    filter === option.value ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
+                  className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
+                    filter === option.value ? 'bg-brand text-white' : 'text-muted hover:text-heading'
                   }`}
                 >
                   {option.label}
@@ -174,21 +174,12 @@ export function ProductManager() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={refresh}
-              disabled={loading}
-              className="rounded-2xl border border-white/15 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.1em] text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
-            >
+            <button type="button" onClick={refresh} disabled={loading} className="btn-ghost">
               Refresh
             </button>
 
             {!showForm && (
-              <button
-                type="button"
-                onClick={startCreate}
-                className="rounded-2xl bg-red-600 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-red-500"
-              >
+              <button type="button" onClick={startCreate} className="btn-primary px-5 py-2.5">
                 + Add product
               </button>
             )}
@@ -197,30 +188,28 @@ export function ProductManager() {
 
         {/* Action feedback sits above the grid so a failed delete never hides the inventory. */}
         {actionError && (
-          <p className="mb-4 rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-            {actionError}
-          </p>
+          <p className="mb-4 rounded-lg border border-brand/30 bg-brand/5 px-4 py-3 text-sm text-brand">{actionError}</p>
         )}
         {notice && !actionError && (
-          <p className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+          <p className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-success/30 bg-success-soft px-4 py-3 text-sm text-success">
             {notice}
-            <button type="button" onClick={() => setNotice(null)} className="text-xs uppercase tracking-wider opacity-70 hover:opacity-100">
+            <button type="button" onClick={() => setNotice(null)} className="text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100">
               Dismiss
             </button>
           </p>
         )}
 
         {loadError ? (
-          <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-6 text-sm text-rose-100">
+          <div className="rounded-lg border border-brand/30 bg-brand/5 px-4 py-6 text-sm text-brand">
             <p>{loadError}</p>
-            <button type="button" onClick={refresh} className="mt-3 rounded-xl bg-rose-500/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider">
+            <button type="button" onClick={refresh} className="mt-3 rounded-lg border border-brand/40 px-4 py-2 text-xs font-bold uppercase tracking-wider">
               Try again
             </button>
           </div>
         ) : loading ? (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((slot) => (
-              <div key={slot} className="h-80 animate-pulse rounded-[2rem] border border-white/5 bg-slate-950/50" />
+              <div key={slot} className="h-80 animate-pulse rounded-xl border border-line bg-skeleton" />
             ))}
           </div>
         ) : (

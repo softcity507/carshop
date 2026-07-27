@@ -33,7 +33,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col   text-gray-900 dark:bg-gray-900 dark:text-gray-50">
+      {/* Colours come from the @theme tokens in globals.css, not per-element utilities. */}
+      <body className="min-h-full flex flex-col bg-canvas text-ink">
         <AuthProvider>
           <CartProvider>
             <Header />

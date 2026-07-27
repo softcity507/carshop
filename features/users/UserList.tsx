@@ -9,127 +9,152 @@ interface CarUser {
   email: string | null;
   displayName: string | null;
   role?: string;
-  createdAt?: { toDate?: () => Date } | string | null;
-  lastLogin?: { toDate?: () => Date } | string | null;
+  createdAt?: { _seconds?: number; toDate?: () => Date } | string | null;
+  lastLogin?: { _seconds?: number; toDate?: () => Date } | string | null;
 }
 
-function formatTimestamp(value: CarUser['createdAt'] | CarUser['lastLogin']) {
-  if (!value) return 'N/A';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object' && value?.toDate) {
-    return value.toDate().toLocaleString();
+/**
+ * Firestore Timestamps arrive over JSON as `{_seconds,_nanoseconds}` — `toDate()` does not survive
+ * serialisation, so handle the raw shape too rather than silently rendering "N/A".
+ */
+function formatTimestamp(value: CarUser['createdAt']) {
+  if (!value) return 'Never';
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
   }
-  return 'N/A';
+  if (typeof value === 'object') {
+    if (typeof value.toDate === 'function') return value.toDate().toLocaleString();
+    if (typeof value._seconds === 'number') return new Date(value._seconds * 1000).toLocaleString();
+  }
+  return 'Never';
 }
 
 export function UserList() {
   const [users, setUsers] = useState<CarUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [deletingUid, setDeletingUid] = useState<string | null>(null);
 
   const { user: currentUser, isAuthReady } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
-    async function loadUsers() {
+    if (!isAuthReady || !isAdmin) return;
+
+    let active = true;
+
+    (async () => {
       try {
         const loadedUsers = await UserService.getUsers<CarUser>();
-
+        if (!active) return;
+        // Admins first, then alphabetically so the order is stable between loads.
         setUsers(
-          loadedUsers.sort((a, b) => {
-            if (a.role === b.role) return 0;
-            if (a.role === 'admin') return -1;
-            if (b.role === 'admin') return 1;
-            return 0;
+          [...loadedUsers].sort((a, b) => {
+            if (a.role !== b.role) return a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : 0;
+            return (a.email ?? '').localeCompare(b.email ?? '');
           })
         );
+        setLoadError(null);
       } catch (err) {
-        console.error('Failed to load users', err);
-        setError(err instanceof Error ? err.message : 'Unable to load users. Please refresh the page.');
+        if (active) setLoadError(err instanceof Error ? err.message : 'Unable to load users.');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    }
-    
-    if (!isAuthReady) {
-      return;
-    }
+    })();
 
-    if (currentUser?.role === 'admin') {
-      loadUsers();
-    }
-  }, [currentUser?.role, isAuthReady]);
+    return () => {
+      active = false;
+    };
+  }, [isAuthReady, isAdmin]);
 
   async function handleDeleteUser(targetUser: CarUser) {
     if (targetUser.uid === currentUser?.uid) {
-      setError('You cannot delete your own account.');
+      setActionError('You cannot delete your own account.');
       return;
     }
 
     const name = targetUser.displayName ?? targetUser.email ?? 'this user';
-    if (!window.confirm(`Delete ${name}? This permanently removes the account and its user profile.`)) {
-      return;
-    }
+    if (!window.confirm(`Delete ${name}? This permanently removes the account and its profile.`)) return;
 
     setDeletingUid(targetUser.uid);
-    setError(null);
+    setActionError(null);
 
     try {
       await UserService.deleteUser(targetUser.uid);
-      setUsers((currentUsers) => currentUsers.filter((user) => user.uid !== targetUser.uid));
+      setUsers((current) => current.filter((user) => user.uid !== targetUser.uid));
     } catch (err) {
-      console.error('Failed to delete user', err);
-      setError('Unable to delete this user. Please try again.');
+      setActionError(err instanceof Error ? err.message : 'Unable to delete this user.');
     } finally {
       setDeletingUid(null);
     }
   }
 
+  if (isAuthReady && !isAdmin) {
+    return <div className="card px-6 py-12 text-center text-sm text-muted">You need an admin account to manage users.</div>;
+  }
+
   return (
-    <div className="rounded-3xl bg-slate-900/95 p-6 shadow-2xl ring-1 ring-white/10 backdrop-blur-xl">
+    <div className="card p-6">
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Registered Users</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            All users fetched from Firestore with role information.
-          </p>
+          <h2 className="text-xl font-bold uppercase tracking-tight text-heading">Registered Users</h2>
+          <p className="mt-1 text-sm text-muted">All accounts with their current role.</p>
         </div>
-        <div className="rounded-2xl bg-slate-950 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/10">
-          {loading ? 'Loading users…' : `${users.length} users found`}
-        </div>
+        <span className="rounded-lg border border-line bg-chip px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-muted">
+          {loading ? 'Loading…' : `${users.length} user${users.length === 1 ? '' : 's'}`}
+        </span>
       </div>
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-          {error}
+      {/* Action errors sit above the table so a failed delete never hides the list. */}
+      {actionError && (
+        <p className="mb-4 rounded-lg border border-brand/30 bg-brand/5 px-4 py-3 text-sm text-brand">{actionError}</p>
+      )}
+
+      {loadError ? (
+        <p className="rounded-lg border border-brand/30 bg-brand/5 px-4 py-6 text-sm text-brand">{loadError}</p>
+      ) : loading ? (
+        <div className="space-y-3">
+          {[0, 1, 2].map((slot) => (
+            <div key={slot} className="h-14 animate-pulse rounded-lg bg-skeleton" />
+          ))}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/90">
-          <table className="min-w-full divide-y divide-slate-800 text-left text-sm text-slate-200">
-            <thead className="bg-slate-900/90 text-slate-300">
+        <div className="overflow-x-auto rounded-lg border border-line">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-chip">
               <tr>
-                <th className="px-4 py-4">Name</th>
-                <th className="px-4 py-4">Email</th>
-                <th className="px-4 py-4">Role</th>
-                <th className="px-4 py-4">Last Login</th>
-                <th className="px-4 py-4 text-right">Actions</th>
+                {['Name', 'Email', 'Role', 'Last Login'].map((heading) => (
+                  <th key={heading} className="px-4 py-3 text-xs font-bold uppercase tracking-[0.08em] text-muted">
+                    {heading}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-[0.08em] text-muted">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-line">
               {users.map((listedUser) => (
-                <tr key={listedUser.uid} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-4 font-medium text-white">{listedUser.displayName ?? 'Unknown'}</td>
-                  <td className="px-4 py-4 text-slate-300">{listedUser.email ?? 'No email'}</td>
-                  <td className={`px-4 py-4 font-semibold ${listedUser.role === 'admin' ? 'text-emerald-300' : 'text-slate-200'}`}>
-                    {listedUser.role ?? 'user'}
+                <tr key={listedUser.uid} className="transition hover:bg-chip/60">
+                  <td className="px-4 py-4 font-semibold text-heading">{listedUser.displayName ?? 'Unknown'}</td>
+                  <td className="px-4 py-4 text-muted">{listedUser.email ?? 'No email'}</td>
+                  <td className="px-4 py-4">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.06em] ${
+                        listedUser.role === 'admin' ? 'bg-brand text-white' : 'bg-chip text-muted'
+                      }`}
+                    >
+                      {listedUser.role ?? 'user'}
+                    </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-400">{formatTimestamp(listedUser.lastLogin)}</td>
+                  <td className="px-4 py-4 text-muted">{formatTimestamp(listedUser.lastLogin)}</td>
                   <td className="px-4 py-4 text-right">
                     <button
                       type="button"
                       onClick={() => handleDeleteUser(listedUser)}
                       disabled={deletingUid === listedUser.uid || listedUser.uid === currentUser?.uid}
-                      className="rounded-lg bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-200 ring-1 ring-inset ring-rose-500/30 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      title={listedUser.uid === currentUser?.uid ? 'You cannot delete your own account' : undefined}
+                      className="rounded-lg border border-brand/40 bg-brand/5 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-brand transition hover:bg-brand/10 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {deletingUid === listedUser.uid ? 'Deleting…' : 'Delete'}
                     </button>

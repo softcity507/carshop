@@ -2,9 +2,9 @@ import React from 'react';
 
 export function OrderSummary() {
   return (
-    <div className="p-4 bg-white border rounded">
-      <h3 className="font-bold text-lg mb-2">Order Summary</h3>
-      <p className="text-gray-500 text-sm">Lorem ipsum dolor sit amet, order total and details.</p>
+    <div className="card p-6">
+      <h3 className="text-lg font-bold uppercase tracking-tight text-heading">Order Summary</h3>
+      <p className="mt-2 text-sm text-muted">No orders yet. Customer orders will appear here once checkout is live.</p>
     </div>
   );
 }
