@@ -81,7 +81,7 @@ export function Header() {
 
            {admin && (
             <Link
-              href="/admin"
+              href="/users"
               className="rounded-full bg-[#4CBDAD] px-5 py-2 text-white transition hover:bg-[#71d4c7]/90"
             >
               Admin Dashboard

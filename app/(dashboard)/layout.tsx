@@ -10,6 +10,7 @@ const navLinks = [
   { href: '/users', label: 'Users' },
   { href: '/admin-products', label: 'Products' },
   { href: '/orders', label: 'Orders' },
+  { href: '/messages', label: 'Messages' },
   { href: '/settings', label: 'Settings' },
 ];
 

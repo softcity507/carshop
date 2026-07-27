@@ -10,6 +10,7 @@ export function Sidebar() {
         <li><Link href="/users" className="block p-2 rounded hover:bg-gray-200">Users</Link></li>
         <li><Link href="/admin-products" className="block p-2 rounded hover:bg-gray-200">Products</Link></li>
         <li><Link href="/orders" className="block p-2 rounded hover:bg-gray-200">Orders</Link></li>
+        <li><Link href="/messages" className="block p-2 rounded hover:bg-gray-200">Messages</Link></li>
         <li><Link href="/settings" className="block p-2 rounded hover:bg-gray-200">Settings</Link></li>
       </ul>
     </aside>
