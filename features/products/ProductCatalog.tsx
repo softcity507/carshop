@@ -209,8 +209,14 @@ export function ProductCatalog() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-2xl font-bold tracking-tight text-[#bb0014]">{formatPrice(product)}</p>
-                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#44474e]">
-                        {product.type === 'car' ? 'Starting MSRP' : 'Per unit'}
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#44474e]">Per unit</p>
+                      {/* Vehicles and spare parts are both stocked by the unit, so both show a count. */}
+                      <p
+                        className={`mt-2 text-xs font-semibold ${
+                          product.stock > 0 ? 'text-emerald-700' : 'text-[#bb0014]'
+                        }`}
+                      >
+                        {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                       </p>
                     </div>
                   </div>
@@ -233,7 +239,7 @@ export function ProductCatalog() {
                     >
                       View Details
                     </Link>
-                    <AddToCartButton product={product} tone="light" />
+                    <AddToCartButton product={product} />
                   </div>
                 </div>
               </article>

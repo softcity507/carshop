@@ -18,8 +18,9 @@ export function formatPrice(product: Pick<Product, 'price' | 'currency'>) {
 
 function stockLabel(product: Product) {
   if (product.stock <= 0) return { text: 'Out of stock', tone: 'text-brand' };
-  if (product.type === 'part' && product.stock <= 5) return { text: `Only ${product.stock} left`, tone: 'text-warning' };
-  return { text: 'In stock', tone: 'text-success' };
+  // Cars and parts are both counted in units, so both cards show the real number.
+  if (product.stock <= 5) return { text: `Only ${product.stock} left`, tone: 'text-warning' };
+  return { text: `${product.stock} in stock`, tone: 'text-success' };
 }
 
 interface ProductGridProps {

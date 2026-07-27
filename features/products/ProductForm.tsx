@@ -129,7 +129,7 @@ export function ProductForm({ initialProduct, onSubmit, onCancel }: ProductFormP
 
   function handleTypeChange(next: ProductType) {
     setType(next);
-    // Cars are one-of-a-kind; parts are stocked in quantity. Only nudge the default on a fresh form.
+    // Both types sell by the unit — this only nudges a sensible default on a fresh form.
     if (!isEditing) setStock(next === 'car' ? '1' : '10');
   }
 
@@ -271,7 +271,7 @@ export function ProductForm({ initialProduct, onSubmit, onCancel }: ProductFormP
         <Field label="Currency">
           <input className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
         </Field>
-        <Field label="Stock" hint={type === 'car' ? 'Usually 1 for a specific vehicle.' : 'Units available to sell.'}>
+        <Field label="Stock" hint="Units available to sell — this caps the quantity a buyer can cart.">
           <input
             className={inputClass}
             type="number"

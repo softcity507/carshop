@@ -167,24 +167,18 @@ export function ProductDetail({ productId }: { productId: string }) {
           <h1 className="text-3xl font-extrabold uppercase tracking-tight text-[#031636] sm:text-4xl">{product.name}</h1>
 
           <p className="mt-4 text-4xl font-bold tracking-tight text-[#bb0014]">{formatPrice(product)}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.06em] text-[#44474e]">
-            {product.type === 'car' ? 'Starting MSRP' : 'Per unit'}
-          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.06em] text-[#44474e]">Per unit</p>
 
           <p className={`mt-4 text-sm font-semibold ${product.stock > 0 ? 'text-emerald-700' : 'text-[#bb0014]'}`}>
-            {product.stock > 0
-              ? product.type === 'car'
-                ? 'Available'
-                : `${product.stock} in stock`
-              : 'Out of stock'}
+            {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
           </p>
 
           {product.description && (
             <p className="mt-6 whitespace-pre-line text-base leading-7 text-[#44474e]">{product.description}</p>
           )}
 
-          {/* Quantity stepper — hidden for cars, which are single-unit by definition. */}
-          {product.type === 'part' && ceiling > 1 && (
+          {/* Cars and parts both sell by the unit, so the stepper shows whenever more than one is stocked. */}
+          {ceiling > 1 && (
             <div className="mt-8 flex items-center gap-4">
               <span className="text-xs font-bold uppercase tracking-[0.12em] text-[#44474e]">Quantity</span>
               <div className="flex items-center rounded-lg border border-[#c5c6cf]">
@@ -212,7 +206,7 @@ export function ProductDetail({ productId }: { productId: string }) {
           )}
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <AddToCartButton product={product} quantity={quantity} tone="light" fullWidth={false} className="flex-1" />
+            <AddToCartButton product={product} quantity={quantity} fullWidth={false} className="flex-1" />
             <Link
               href="/cart"
               className="flex-1 rounded-lg border-2 border-[#031636] py-3 text-center text-xs font-bold uppercase tracking-[0.15em] text-[#031636] transition hover:bg-[#031636] hover:text-white"

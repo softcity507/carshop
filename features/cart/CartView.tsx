@@ -30,6 +30,14 @@ export function CartView() {
       </div>
     );
   }
+ 
+ const handleStrip=()=>{}
+ {
+  
+  
+ }
+
+
 
   if (items.length === 0) {
     return (
@@ -76,34 +84,28 @@ export function CartView() {
                 </p>
 
                 <div className="mt-4 flex flex-wrap items-center gap-4">
-                  {/* Cars are single-unit, so they show a fixed label instead of a stepper. */}
-                  {item.type === 'car' ? (
-                    <span className="rounded-lg border border-[#c5c6cf] px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-[#44474e]">
-                      Qty 1
-                    </span>
-                  ) : (
-                    <div className="flex items-center rounded-lg border border-[#c5c6cf]">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item.productId, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        aria-label={`Decrease quantity of ${item.name}`}
-                        className="p-2.5 text-[#031636] transition hover:bg-[#edeeef] disabled:opacity-40"
-                      >
-                        <FiMinus size={14} />
-                      </button>
-                      <span className="w-10 text-center text-sm font-bold text-[#031636]">{item.quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(item.productId, item.quantity + 1)}
-                        disabled={item.quantity >= ceiling}
-                        aria-label={`Increase quantity of ${item.name}`}
-                        className="p-2.5 text-[#031636] transition hover:bg-[#edeeef] disabled:opacity-40"
-                      >
-                        <FiPlus size={14} />
-                      </button>
-                    </div>
-                  )}
+                  {/* Vehicles and parts use the same stepper — both are clamped to their stock. */}
+                  <div className="flex items-center rounded-lg border border-[#c5c6cf]">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(item.productId, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      aria-label={`Decrease quantity of ${item.name}`}
+                      className="p-2.5 text-[#031636] transition hover:bg-[#edeeef] disabled:opacity-40"
+                    >
+                      <FiMinus size={14} />
+                    </button>
+                    <span className="w-10 text-center text-sm font-bold text-[#031636]">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(item.productId, item.quantity + 1)}
+                      disabled={item.quantity >= ceiling}
+                      aria-label={`Increase quantity of ${item.name}`}
+                      className="p-2.5 text-[#031636] transition hover:bg-[#edeeef] disabled:opacity-40"
+                    >
+                      <FiPlus size={14} />
+                    </button>
+                  </div>
 
                   <button
                     type="button"
@@ -155,7 +157,7 @@ export function CartView() {
         </div>
 
         <button
-          type="button"
+           onClick={handleStrip}
           className="mt-6 w-full rounded-lg bg-[#bb0014] py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:bg-[#e51d24]"
         >
           Proceed to checkout

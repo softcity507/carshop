@@ -30,7 +30,7 @@ export function toCartItem(product: Product, quantity: number): CartItem {
   };
 }
 
-/** A specific vehicle is one-of-a-kind, so it can never be carted more than once. */
+/** Cars and parts are both stocked by unit — stock is the only ceiling. */
 export function maxQuantityFor(item: Pick<CartItem, 'type' | 'stock'>) {
-  return item.type === 'car' ? Math.min(1, item.stock) : item.stock;
+  return Math.max(0, Math.trunc(item.stock));
 }
