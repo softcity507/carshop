@@ -58,7 +58,7 @@ export function Header() {
           </Link>
 
           <Link
-            href="/product"
+            href="/products"
             className="rounded-full px-4 py-2 text-slate-200 transition hover:bg-slate-800 hover:text-white"
           >
             Product
