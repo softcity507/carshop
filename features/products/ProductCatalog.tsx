@@ -1,6 +1,8 @@
 "use client";
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { AddToCartButton } from '@/features/cart/AddToCartButton';
 import { cloudinaryThumb } from '@/lib/cloudinary';
 import { ProductService } from '@/services/product.service';
 import { productSpecChips, type Product, type ProductType } from '@/types/product';
@@ -109,7 +111,7 @@ export function ProductCatalog() {
             <select
               value={bodyStyle}
               onChange={(e) => setBodyStyle(e.target.value)}
-              className="mt-2 w-full rounded-lg border-0 bg-white px-4 py-3 text-sm font-medium capitalize normal-case tracking-normal text-[#031636] outline-none ring-2 ring-transparent transition focus:ring-[#e51d24]"
+              className="mt-2 w-full rounded-lg border-0 bg-white px-4 py-3 text-sm font-medium capitalize tracking-normal text-[#031636] outline-none ring-2 ring-transparent transition focus:ring-[#e51d24]"
             >
               {bodyStyleOptions.map((option) => <option key={option}>{option}</option>)}
             </select>
@@ -199,7 +201,7 @@ export function ProductCatalog() {
                   )}
                 </div>
 
-                <div className="p-6">
+                <div className="    flex flex-col justify-between p-3 gap-5 ">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-bold uppercase tracking-tight text-[#031636]">{product.name}</h2>
@@ -213,7 +215,7 @@ export function ProductCatalog() {
                     </div>
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-2">
+                  <div className=" not-[]: flex flex-wrap gap-2">
                     {productSpecChips(product).map((spec) => (
                       <span
                         key={spec}
@@ -224,9 +226,15 @@ export function ProductCatalog() {
                     ))}
                   </div>
 
-                  <button className="mt-6 w-full rounded border-2 border-[#031636] py-3 text-xs font-bold uppercase tracking-[0.15em] text-[#031636] transition hover:bg-[#031636] hover:text-white">
-                    View Details
-                  </button>
+                  <div className="  flex flex-col gap-3">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="block w-full rounded border-2 border-[#031636] py-3 text-center text-xs font-bold uppercase tracking-[0.15em] text-[#031636] transition hover:bg-[#031636] hover:text-white"
+                    >
+                      View Details
+                    </Link>
+                    <AddToCartButton product={product} tone="light" />
+                  </div>
                 </div>
               </article>
             );

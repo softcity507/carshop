@@ -4,6 +4,7 @@ import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { AuthProvider } from "@/context/AuthProvider";
+import { CartProvider } from "@/context/CartProvider";
 import ToastProvider from "@/components/ToastProvider";
 import LayoutWrapper from "@/components/layout/LayoutWrapper";
  
@@ -34,11 +35,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col   text-gray-900 dark:bg-gray-900 dark:text-gray-50">
         <AuthProvider>
-          <Header />
-           <LayoutWrapper>
-            {children}
-          </LayoutWrapper>
-           <ToastProvider />
+          <CartProvider>
+            <Header />
+             <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
+             <ToastProvider />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

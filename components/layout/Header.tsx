@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
+import { FiShoppingCart } from "react-icons/fi";
 import logo from "@/public/images/logo.png";
 import { useAuth } from '@/hooks/useAuth';
 import { AuthService } from '@/services/auth.service';
+import { CartButton } from '@/features/cart/CartButton';
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -75,6 +77,8 @@ export function Header() {
           >
             Contact
           </Link>
+          <CartButton />
+
            {admin && (
             <Link
               href="/admin"
@@ -105,13 +109,18 @@ export function Header() {
           
         </nav>
 
-        {/* Mobile Button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="rounded-lg p-2 text-white lg:hidden"
-        >
-          {open ? <X size={28} /> : <Menu size={28} />}
-        </button>
+        {/* Mobile: cart stays reachable without opening the menu */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <CartButton />
+
+          <button
+            onClick={() => setOpen(!open)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            className="rounded-lg p-2 text-white"
+          >
+            {open ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -149,6 +158,15 @@ export function Header() {
               onClick={() => setOpen(false)}
             >
               Contact
+            </Link>
+
+            <Link
+              href="/cart"
+              className="flex items-center gap-3 rounded-lg px-4 py-3 text-white hover:bg-slate-800"
+              onClick={() => setOpen(false)}
+            >
+              <FiShoppingCart size={18} />
+              Cart
             </Link>
 
             <hr className="my-4 border-white/10" />

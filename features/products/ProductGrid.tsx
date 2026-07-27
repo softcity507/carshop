@@ -1,4 +1,6 @@
 import React from 'react';
+import Link from 'next/link';
+import { AddToCartButton } from '@/features/cart/AddToCartButton';
 import { cloudinaryThumb } from '@/lib/cloudinary';
 import { productSpecChips, type Product } from '@/types/product';
 
@@ -91,10 +93,10 @@ export function ProductGrid({
               ))}
             </div>
 
-            <div className="mt-auto flex items-center justify-between gap-4 pt-6">
-              <span className="text-lg font-semibold text-white">{formatPrice(product)}</span>
-
+            <div className="mt-auto pt-6">
               {onEdit || onDelete ? (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-lg font-semibold text-white">{formatPrice(product)}</span>
                 <div className="flex gap-2">
                   {!product.published && (
                     <span className="self-center rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase text-amber-300">
@@ -120,11 +122,21 @@ export function ProductGrid({
                       {deletingId === product.id ? 'Deleting…' : 'Delete'}
                     </button>
                   )}
+                  </div>
                 </div>
               ) : (
-                <button className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold uppercase tracking-[0.15em] text-white transition hover:bg-red-500">
-                  View
-                </button>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-lg font-semibold text-white">{formatPrice(product)}</span>
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="rounded-2xl bg-white/5 px-4 py-2 text-sm font-semibold uppercase tracking-[0.15em] text-slate-200 ring-1 ring-inset ring-white/15 transition hover:bg-white/10"
+                    >
+                      Details
+                    </Link>
+                  </div>
+                  <AddToCartButton product={product} tone="dark" />
+                </div>
               )}
             </div>
           </article>

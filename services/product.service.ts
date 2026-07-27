@@ -40,6 +40,11 @@ export const ProductService = {
     return apiRequest<Product[]>(`/api/products${query}`, 'GET');
   },
 
+  /** Single published product, for the detail page. */
+  async getProduct(id: string) {
+    return apiRequest<Product>(`/api/products/${encodeURIComponent(id)}`, 'GET');
+  },
+
   /** Admin listing — includes drafts. Requires an admin session. */
   async getAllProducts(type?: ProductType) {
     const params = new URLSearchParams({ includeUnpublished: 'true' });
