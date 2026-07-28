@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { auth } from '@/firebase/firebase';
+import { TTL, cached, invalidate } from '@/lib/dataCache';
 import type { Order, OrderPatch } from '@/types/order';
 
 async function getAuthToken() {
@@ -33,20 +34,28 @@ async function apiRequest<T>(url: string, method: string, body?: unknown): Promi
   }
 }
 
+/** Order writes also append to the admin activity log, so both caches go stale together. */
+function invalidateOrders() {
+  invalidate('orders');
+  invalidate('settings:notes');
+}
+
 export const OrderService = {
   /** Every order for an admin; the caller's own orders for anyone else. */
-  async getOrders() {
-    return apiRequest<Order[]>('/api/orders', 'GET');
+  async getOrders(force = false) {
+    return cached('orders:all', TTL.volatile, () => apiRequest<Order[]>('/api/orders', 'GET'), force);
   },
 
   /** The caller's own orders, whatever their role — what the customer history screen shows. */
-  async getMyOrders() {
-    return apiRequest<Order[]>('/api/orders?mine=true', 'GET');
+  async getMyOrders(force = false) {
+    return cached('orders:mine', TTL.volatile, () => apiRequest<Order[]>('/api/orders?mine=true', 'GET'), force);
   },
 
   /** Admin only — corrects status, payment state, delivery details or the internal note. */
   async updateOrder(id: string, patch: OrderPatch) {
-    return apiRequest<Order>('/api/orders', 'PATCH', { id, ...patch });
+    const updated = await apiRequest<Order>('/api/orders', 'PATCH', { id, ...patch });
+    invalidateOrders();
+    return updated;
   },
 
   /**
@@ -54,19 +63,25 @@ export const OrderService = {
    * while it is still unpaid. Any Stripe charge must be refunded separately.
    */
   async deleteOrder(id: string) {
-    return apiRequest<{ success: boolean; id: string }>(
+    const result = await apiRequest<{ success: boolean; id: string }>(
       `/api/orders?id=${encodeURIComponent(id)}`,
       'DELETE'
     );
+    invalidateOrders();
+    return result;
   },
 
   /** Buyer asks for their money back on a paid order — files the request for an admin to handle. */
   async requestRefund(id: string, reason: string) {
-    return apiRequest<Order>('/api/orders/refund', 'POST', { id, reason });
+    const updated = await apiRequest<Order>('/api/orders/refund', 'POST', { id, reason });
+    invalidateOrders();
+    return updated;
   },
 
   /** Admin only — records the outcome once the refund has been issued or refused in Stripe. */
   async resolveRefund(id: string, decision: 'approved' | 'declined', note = '') {
-    return apiRequest<Order>('/api/orders/refund', 'PATCH', { id, decision, note });
+    const updated = await apiRequest<Order>('/api/orders/refund', 'PATCH', { id, decision, note });
+    invalidateOrders();
+    return updated;
   },
 };

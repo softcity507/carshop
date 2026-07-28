@@ -97,7 +97,8 @@ export function ContactMessages() {
     setRefreshing(true);
     setActionError(null);
     try {
-      setMessages(await ContactService.getMessages());
+      // Refresh means "go and look again", so it skips the cache.
+      setMessages(await ContactService.getMessages(true));
       setLoadError(null);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Unable to refresh messages.');

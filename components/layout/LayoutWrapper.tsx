@@ -2,23 +2,41 @@
 
 import { useEffect, useState } from "react";
 import GlobalLoader from "@/components/mini/GlobalLoader";
+import { useAuth } from "@/hooks/useAuth";
+
+/** The loader is on screen for this long even when everything is already in hand. */
+const MINIMUM_MS = 1000;
+
+/** If Firebase never answers, show the site anyway rather than spinning forever. */
+const GIVE_UP_AFTER_MS = 8000;
 
 export default function LayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [loading, setLoading] = useState(true);
+  // Auth is the gate: almost every screen renders differently depending on who is signed in, and
+  // it is the one fetch that has to finish before anything can be drawn. Page-level data loads
+  // behind each page's own skeleton, so it does not hold this loader up.
+  const { isAuthReady } = useAuth();
+
+  const [minimumPassed, setMinimumPassed] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2000);
+    const minimum = setTimeout(() => setMinimumPassed(true), MINIMUM_MS);
+    const giveUp = setTimeout(() => setGaveUp(true), GIVE_UP_AFTER_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(minimum);
+      clearTimeout(giveUp);
+    };
   }, []);
 
-  if (loading) {
+  // One second normally; longer only while the session is still being fetched.
+  const stillLoading = !minimumPassed || !isAuthReady;
+
+  if (stillLoading && !gaveUp) {
     return <GlobalLoader />;
   }
 

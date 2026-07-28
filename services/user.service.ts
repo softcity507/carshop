@@ -1,5 +1,6 @@
 import { auth } from '@/firebase/firebase';
 import axios from 'axios';
+import { TTL, cached, invalidate } from '@/lib/dataCache';
 
 export interface CreateUserPayload {
   name: string;
@@ -55,20 +56,26 @@ async function apiRequest<T>(path: string, method: string, body?: unknown): Prom
 }
 
 export const UserService = {
-  async getUsers<T = Record<string, unknown>>() {
-    return apiRequest<T[]>('/api/users', 'GET');
+  async getUsers<T = Record<string, unknown>>(force = false) {
+    return cached('users:all', TTL.steady, () => apiRequest<T[]>('/api/users', 'GET'), force);
   },
 
   async createUser(payload: CreateUserPayload) {
-    return apiRequest('/api/users', 'POST', payload);
+    const created = await apiRequest('/api/users', 'POST', payload);
+    invalidate('users');
+    return created;
   },
 
   async updateUser(payload: UpdateUserPayload) {
-    return apiRequest('/api/users', 'PUT', payload);
+    const updated = await apiRequest('/api/users', 'PUT', payload);
+    invalidate('users');
+    return updated;
   },
 
   async deleteUser(uid: string) {
-    return apiRequest('/api/users', 'DELETE', { uid });
+    const result = await apiRequest('/api/users', 'DELETE', { uid });
+    invalidate('users');
+    return result;
   },
 };
  

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { auth } from '@/firebase/firebase';
+import { TTL, cached, invalidate } from '@/lib/dataCache';
 import type { ContactInput, ContactMessage, ContactStatus } from '@/types/contact';
 
 async function getAuthToken() {
@@ -40,26 +41,42 @@ export const ContactService = {
    * sent when there is one so the admin inbox can show which account the message came from.
    */
   async sendMessage(payload: ContactInput) {
-    return apiRequest<{ success: boolean; id: string }>('/api/contact', 'POST', payload, true);
+    const result = await apiRequest<{ success: boolean; id: string }>('/api/contact', 'POST', payload, true);
+    invalidate('contact');
+    return result;
   },
 
   /** Admin only — every enquiry, newest first, with the sender's account details attached. */
-  async getMessages() {
-    return apiRequest<ContactMessage[]>('/api/contact', 'GET', undefined, true);
+  async getMessages(force = false) {
+    return cached(
+      'contact:messages',
+      TTL.volatile,
+      () => apiRequest<ContactMessage[]>('/api/contact', 'GET', undefined, true),
+      force
+    );
   },
 
   /** Admin only — mark a message as read or archived. */
   async updateStatus(id: string, status: ContactStatus) {
-    return apiRequest<{ success: boolean; id: string; status: ContactStatus }>('/api/contact', 'PATCH', { id, status }, true);
+    const result = await apiRequest<{ success: boolean; id: string; status: ContactStatus }>(
+      '/api/contact',
+      'PATCH',
+      { id, status },
+      true
+    );
+    invalidate('contact');
+    return result;
   },
 
   /** Admin only. */
   async deleteMessage(id: string) {
-    return apiRequest<{ success: boolean; id: string }>(
+    const result = await apiRequest<{ success: boolean; id: string }>(
       `/api/contact?id=${encodeURIComponent(id)}`,
       'DELETE',
       undefined,
       true
     );
+    invalidate('contact');
+    return result;
   },
 };

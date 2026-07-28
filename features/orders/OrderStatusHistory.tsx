@@ -95,7 +95,8 @@ export function OrderStatusHistory() {
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      setOrders(await OrderService.getMyOrders());
+      // Refresh means "go and look again", so it skips the cache.
+      setOrders(await OrderService.getMyOrders(true));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not refresh your orders.');

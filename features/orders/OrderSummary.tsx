@@ -126,7 +126,8 @@ export function OrderSummary() {
     setRefreshing(true);
     setActionError(null);
     try {
-      setOrders(await OrderService.getOrders());
+      // Refresh means "go and look again", so it skips the cache.
+      setOrders(await OrderService.getOrders(true));
       setLoadError(null);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Unable to refresh orders.');

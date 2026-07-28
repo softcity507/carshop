@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { clearRecentActivity } from '@/lib/activityCookie';
+import { invalidateAll } from '@/lib/dataCache';
 
 const USER_KEY = 'carhub_user';
 const TOKEN_KEY = 'carhub_token';
@@ -24,6 +25,9 @@ function storeSession(authUser: AuthUser, token: string) {
     sessionStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(authUser));
     localStorage.setItem(TOKEN_KEY, token);
+    // Whatever was cached belonged to whoever was here before, and an admin sees more than a
+    // customer does — start the new session with nothing carried over.
+    invalidateAll();
   }
 }
 
@@ -35,6 +39,7 @@ function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     // The cached activity trail belongs to the admin who just left, not to the machine.
     clearRecentActivity();
+    invalidateAll();
   }
 }
 

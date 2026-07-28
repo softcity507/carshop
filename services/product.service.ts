@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { auth } from '@/firebase/firebase';
+import { TTL, cached, invalidate } from '@/lib/dataCache';
 import type { Product, ProductInput, ProductType } from '@/types/product';
 
 async function getAuthToken() {
@@ -34,33 +35,57 @@ async function apiRequest<T>(url: string, method: string, body?: unknown): Promi
 }
 
 export const ProductService = {
-  /** Storefront listing — published products only. */
-  async getProducts(type?: ProductType) {
+  /** Storefront listing — published products only. Shared by the catalog and the featured strip. */
+  async getProducts(type?: ProductType, force = false) {
     const query = type ? `?type=${type}` : '';
-    return apiRequest<Product[]>(`/api/products${query}`, 'GET');
+    return cached(
+      `products:public:${type ?? 'all'}`,
+      TTL.steady,
+      () => apiRequest<Product[]>(`/api/products${query}`, 'GET'),
+      force
+    );
   },
 
   /** Single published product, for the detail page. */
-  async getProduct(id: string) {
-    return apiRequest<Product>(`/api/products/${encodeURIComponent(id)}`, 'GET');
+  async getProduct(id: string, force = false) {
+    return cached(
+      `products:one:${id}`,
+      TTL.steady,
+      () => apiRequest<Product>(`/api/products/${encodeURIComponent(id)}`, 'GET'),
+      force
+    );
   },
 
   /** Admin listing — includes drafts. Requires an admin session. */
-  async getAllProducts(type?: ProductType) {
+  async getAllProducts(type?: ProductType, force = false) {
     const params = new URLSearchParams({ includeUnpublished: 'true' });
     if (type) params.set('type', type);
-    return apiRequest<Product[]>(`/api/products?${params}`, 'GET');
+    return cached(
+      `products:admin:${type ?? 'all'}`,
+      TTL.volatile,
+      () => apiRequest<Product[]>(`/api/products?${params}`, 'GET'),
+      force
+    );
   },
 
   async createProduct(payload: ProductInput) {
-    return apiRequest<Product>('/api/products', 'POST', payload);
+    const created = await apiRequest<Product>('/api/products', 'POST', payload);
+    invalidate('products');
+    return created;
   },
 
   async updateProduct(id: string, payload: ProductInput) {
-    return apiRequest<Product>('/api/products', 'PUT', { ...payload, id });
+    const updated = await apiRequest<Product>('/api/products', 'PUT', { ...payload, id });
+    invalidate('products');
+    return updated;
   },
 
   async deleteProduct(id: string) {
-    return apiRequest<{ success: boolean; id: string }>(`/api/products?id=${encodeURIComponent(id)}`, 'DELETE');
+    const result = await apiRequest<{ success: boolean; id: string }>(
+      `/api/products?id=${encodeURIComponent(id)}`,
+      'DELETE'
+    );
+    invalidate('products');
+    return result;
   },
 };

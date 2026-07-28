@@ -106,7 +106,8 @@ export function ActivityLog() {
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      applyNotes(await SettingsService.getNotes());
+      // Refresh means "go and look again", so it skips the cache.
+      applyNotes(await SettingsService.getNotes(true));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not refresh the log.');
