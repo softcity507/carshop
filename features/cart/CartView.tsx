@@ -1,25 +1,35 @@
 "use client";
 
 import Link from 'next/link';
-import { FiMinus, FiPlus, FiShoppingCart, FiTrash2 } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import { FiLock, FiMinus, FiPlus, FiShoppingCart, FiTrash2 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { cloudinaryThumb } from '@/lib/cloudinary';
+import { formatMoney as money } from '@/lib/helpers';
 import { maxQuantityFor } from '@/types/cart';
-
-function money(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString()}`;
-  }
-}
 
 export function CartView() {
   const { items, itemCount, subtotal, currency, isCartReady, setQuantity, removeItem, clearCart } = useCart();
+  const { user, isAuthReady } = useAuth();
+  const router = useRouter();
+
+  /**
+   * Checkout is a two-step flow: `/checkout` collects and saves the delivery details first, and
+   * only then offers Stripe or a callback. Nothing is charged from this page.
+   */
+  function handleStrip() {
+    if (!isAuthReady || items.length === 0) return;
+
+    if (!user) {
+      toast.info('Please login to continue with your order.');
+      router.push('/login');
+      return;
+    }
+
+    router.push('/checkout');
+  }
 
   if (!isCartReady) {
     return (
@@ -30,15 +40,6 @@ export function CartView() {
       </div>
     );
   }
- 
- const handleStrip=()=>{}
- {
-  
-  
- }
-
-
-
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-[#c5c6cf] bg-white px-6 py-20 text-center">
@@ -157,11 +158,17 @@ export function CartView() {
         </div>
 
         <button
-           onClick={handleStrip}
-          className="mt-6 w-full rounded-lg bg-[#bb0014] py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:bg-[#e51d24]"
+          type="button"
+          onClick={handleStrip}
+          disabled={!isAuthReady}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#bb0014] py-3 text-xs font-bold uppercase tracking-[0.15em] text-white transition hover:bg-[#e51d24] disabled:cursor-not-allowed disabled:bg-[#c5c6cf]"
         >
           Proceed to checkout
         </button>
+
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-[#8b8e97]">
+          <FiLock size={11} /> Secure payment by Stripe
+        </p>
 
         <Link
           href="/products"
