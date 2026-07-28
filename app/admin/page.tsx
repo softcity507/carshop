@@ -1,23 +1,18 @@
 "use client";
 
- 
-import { DashboardOverview } from '@/features/dashboard/DashboardOverview';
 import AdminGuard from '@/components/guards/AdminGuard';
+import { DashboardOverview } from '@/features/dashboard/DashboardOverview';
 
 export default function AdminPage() {
   return (
     <AdminGuard>
-      <div className="flex min-h-screen bg-gray-50">
-          
-        <main className="flex-1 p-8">
-          <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-          <p className="text-gray-600 mb-6">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Welcome to administrative controls.
-          </p>
+      <div className="flex flex-1 flex-col bg-canvas">
+        <main className="mx-auto w-full max-w-screen-xl flex-1 p-6 lg:p-8">
+          <h1 className="page-title">Admin Panel</h1>
+          <p className="page-subtitle mb-8">Sales, orders and inventory at a glance.</p>
           <DashboardOverview />
         </main>
       </div>
     </AdminGuard>
   );
 }
-

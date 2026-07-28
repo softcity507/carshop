@@ -35,7 +35,7 @@ export function CartView() {
     return (
       <div className="space-y-4">
         {[0, 1].map((slot) => (
-          <div key={slot} className="h-36 animate-pulse rounded-xl border border-[#c5c6cf] bg-[#e1e3e4]" />
+          <div key={slot} className="h-36  animate-pulse rounded-xl border border-[#c5c6cf] bg-[#e1e3e4]" />
         ))}
       </div>
     );
@@ -57,7 +57,7 @@ export function CartView() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start  ">
       <div className="space-y-4">
         {items.map((item) => {
           const ceiling = maxQuantityFor(item);

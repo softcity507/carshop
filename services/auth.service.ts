@@ -13,6 +13,7 @@ import {
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { clearRecentActivity } from '@/lib/activityCookie';
 
 const USER_KEY = 'carhub_user';
 const TOKEN_KEY = 'carhub_token';
@@ -32,6 +33,8 @@ function clearSession() {
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
+    // The cached activity trail belongs to the admin who just left, not to the machine.
+    clearRecentActivity();
   }
 }
 

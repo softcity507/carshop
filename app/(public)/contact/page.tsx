@@ -42,7 +42,7 @@ const DEPARTMENTS = [
 
 export default function ContactPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
+    <div className="flex flex-1 flex-col bg-canvas">
       <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-8 sm:px-8 lg:px-16 lg:pb-20">
         {/* Hero */}
         <section className="overflow-hidden rounded-xl bg-navy px-6 py-14 shadow-lg sm:px-12 lg:py-20">

@@ -7,8 +7,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-[#191c1d]">
-      <main className="mx-auto w-full max-w-screen-xl px-4 py-8 sm:px-8 lg:px-16 lg:pb-20">
+    <div className="flex flex-1 flex-col bg-[#f8f9fa] text-[#191c1d]">
+      <main className="mx-auto w-full max-w-screen-xl flex-1 px-4 py-8 sm:px-8 lg:px-16 lg:pb-20">
         <ProductDetail productId={id} />
       </main>
 

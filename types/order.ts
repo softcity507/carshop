@@ -10,6 +10,39 @@ export interface OrderItem {
 export const ORDER_STATUSES = ['pending', 'processing', 'completed', 'cancelled'] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+export const REFUND_STATUSES = ['requested', 'approved', 'declined'] as const;
+export type RefundStatus = (typeof REFUND_STATUSES)[number];
+
+/**
+ * A buyer's request to be refunded. Money is never moved from here — an admin reads the request
+ * and issues the refund in Stripe, then records the outcome against the order.
+ */
+export interface RefundRequest {
+  status: RefundStatus;
+  reason: string;
+  requestedAt: string | null;
+  resolvedAt?: string | null;
+  resolvedBy?: string | null;
+  /** What the admin wrote back when approving or declining. */
+  resolutionNote?: string;
+}
+
+export const REFUND_REASON_LIMIT = 1000;
+
+/**
+ * An unpaid order is just an intention, so the buyer may remove it outright. Once money has
+ * changed hands the record has to survive — that case goes down the refund route instead.
+ */
+export function canBuyerDelete(order: Pick<Order, 'paymentStatus' | 'fulfilled'>) {
+  return order.paymentStatus === 'unpaid' && order.fulfilled !== true;
+}
+
+/** Only a settled payment can be refunded, and only one request can be open at a time. */
+export function canBuyerRequestRefund(order: Pick<Order, 'paymentStatus' | 'refund'>) {
+  if (order.paymentStatus !== 'paid') return false;
+  return order.refund?.status !== 'requested' && order.refund?.status !== 'approved';
+}
+
 /** Mirrors the Stripe Checkout Session lifecycle, so the dashboard can show where a payment stalled. */
 export const PAYMENT_STATUSES = ['unpaid', 'paid', 'refunded', 'failed', 'expired'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
@@ -48,6 +81,8 @@ export interface Order {
   /** Set as soon as the session is created, so the webhook can find this order again. */
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
+  /** Set once the buyer asks for their money back; the admin resolves it from the dashboard. */
+  refund?: RefundRequest;
   /** Links an enquiry order to the message it raised in the admin inbox. */
   contactMessageId?: string;
   /** Internal note kept alongside the order — never shown to the buyer. */

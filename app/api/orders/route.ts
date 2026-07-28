@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { adminAuth, adminDb } from '@/firebase/admin';
 import { SHIPPING_COUNTRY_CODES } from '@/lib/constants';
+import { logActivity } from '@/lib/settings';
 import {
   CUSTOMER_LIMITS,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
+  canBuyerDelete,
   validateCheckoutCustomer,
   type CheckoutCustomer,
   type OrderStatus,
@@ -18,7 +20,7 @@ const USERS_COLLECTION = 'carUser';
 
 const ADMIN_NOTE_LIMIT = 2000;
 
-type Caller = { uid: string; isAdmin: boolean } | { response: NextResponse };
+type Caller = { uid: string; name: string; isAdmin: boolean } | { response: NextResponse };
 
 async function requireCaller(req: NextRequest): Promise<Caller> {
   const token = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -26,15 +28,19 @@ async function requireCaller(req: NextRequest): Promise<Caller> {
     return { response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }) };
   }
 
-  let uid: string;
+  let decoded: admin.auth.DecodedIdToken;
   try {
-    uid = (await adminAuth.verifyIdToken(token)).uid;
+    decoded = await adminAuth.verifyIdToken(token);
   } catch {
     return { response: NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 }) };
   }
 
-  const snapshot = await adminDb.collection(USERS_COLLECTION).doc(uid).get();
-  return { uid, isAdmin: snapshot.exists && snapshot.data()?.role === 'admin' };
+  const snapshot = await adminDb.collection(USERS_COLLECTION).doc(decoded.uid).get();
+  const profile = snapshot.data();
+  const name =
+    (typeof profile?.displayName === 'string' && profile.displayName) || decoded.name || decoded.email || 'Admin';
+
+  return { uid: decoded.uid, name, isAdmin: snapshot.exists && profile?.role === 'admin' };
 }
 
 /** Firestore Timestamps become `{_seconds,_nanoseconds}` over JSON, so flatten them to ISO here. */
@@ -52,6 +58,14 @@ function serialize(docSnap: admin.firestore.QueryDocumentSnapshot | admin.firest
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
     paidAt: toIso(data.paidAt),
+    // The refund block carries its own Timestamps, which need the same flattening.
+    refund: data.refund
+      ? {
+          ...data.refund,
+          requestedAt: toIso(data.refund.requestedAt),
+          resolvedAt: toIso(data.refund.resolvedAt),
+        }
+      : undefined,
   };
 }
 
@@ -100,16 +114,23 @@ function parseCustomer(value: unknown): CheckoutCustomer | { error: string } {
   return customer;
 }
 
-/** Admins see every order; everyone else sees only their own. */
+/**
+ * Admins see every order; everyone else sees only their own. `?mine=true` narrows it to the
+ * caller's own orders regardless of role, which is what the customer-facing history screen wants
+ * even when an admin is the one looking at it.
+ */
 export async function GET(req: NextRequest) {
   try {
     const caller = await requireCaller(req);
     if ('response' in caller) return caller.response;
 
+    const onlyMine = req.nextUrl.searchParams.get('mine') === 'true';
+
     const collection = adminDb.collection(ORDERS_COLLECTION);
-    const snapshot = caller.isAdmin
-      ? await collection.get()
-      : await collection.where('userId', '==', caller.uid).get();
+    const snapshot =
+      caller.isAdmin && !onlyMine
+        ? await collection.get()
+        : await collection.where('userId', '==', caller.uid).get();
 
     const orders = snapshot.docs.map(serialize);
     // Sorted in memory so Firestore doesn't need a composite index for the per-user query.
@@ -198,6 +219,15 @@ export async function PATCH(req: NextRequest) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    logActivity(
+      caller.uid,
+      caller.name,
+      `Order ${id} updated`,
+      Object.keys(update)
+        .map((field) => (field === 'customer' ? 'delivery details' : field))
+        .join(', ')
+    );
+
     return NextResponse.json(serialize(await docRef.get()));
   } catch (err) {
     return serverError(err);
@@ -205,16 +235,17 @@ export async function PATCH(req: NextRequest) {
 }
 
 /**
- * Admin only — removes the order record. This does not touch Stripe: a paid order still has a
- * charge behind it, so refund it in the Stripe dashboard before deleting the row here.
+ * Removes the order record.
+ *
+ * An admin may delete any order. A buyer may delete only their own, and only while it is still
+ * unpaid — once money has moved the record has to survive, so that case has to go through a
+ * refund request instead. Neither path touches Stripe: refund a charge in the Stripe dashboard
+ * before deleting the row behind it.
  */
 export async function DELETE(req: NextRequest) {
   try {
     const caller = await requireCaller(req);
     if ('response' in caller) return caller.response;
-    if (!caller.isAdmin) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
 
     const idFromQuery = req.nextUrl.searchParams.get('id');
     const body = idFromQuery ? null : await readJson(req);
@@ -222,11 +253,35 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'Missing order id' }, { status: 400 });
 
     const docRef = adminDb.collection(ORDERS_COLLECTION).doc(id);
-    if (!(await docRef.get()).exists) {
+    const existing = await docRef.get();
+    if (!existing.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    const order = existing.data() ?? {};
+
+    if (!caller.isAdmin) {
+      if (order.userId !== caller.uid) {
+        return NextResponse.json({ error: 'This order belongs to another account' }, { status: 403 });
+      }
+      if (!canBuyerDelete({ paymentStatus: order.paymentStatus, fulfilled: order.fulfilled })) {
+        return NextResponse.json(
+          { error: 'This order has already been paid — request a refund instead of deleting it.' },
+          { status: 409 }
+        );
+      }
+    }
+
     await docRef.delete();
+
+    // Deletions are the one action with nothing left behind to inspect, so the log is the record.
+    logActivity(
+      caller.uid,
+      caller.name,
+      caller.isAdmin ? `Order ${id} deleted` : `Order ${id} cancelled by the buyer`,
+      `${order.customer?.fullName ?? 'Unknown buyer'} · ${order.currency ?? ''} ${order.totalAmount ?? 0} · payment was ${order.paymentStatus ?? 'unknown'}`
+    );
+
     return NextResponse.json({ success: true, id });
   } catch (err) {
     return serverError(err);

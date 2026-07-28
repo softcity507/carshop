@@ -2,7 +2,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { adminAuth, adminDb } from '@/firebase/admin';
-import { SHIPPING_COUNTRY_CODES } from '@/lib/constants';
+import { settingsRef } from '@/lib/settings';
+import { DEFAULT_SETTINGS } from '@/types/settings';
 import { getStripe, isStripeConfigured, resolveAppUrl, toStripeAmount, STRIPE_SETUP_MESSAGE } from '@/lib/stripe';
 import {
   CUSTOMER_LIMITS,
@@ -72,7 +73,7 @@ function parseItems(value: unknown): CheckoutRequestItem[] | string {
   return items;
 }
 
-function parseCustomer(value: unknown): CheckoutCustomer | { error: string } {
+function parseCustomer(value: unknown, allowedCountries: string[]): CheckoutCustomer | { error: string } {
   const raw = (value ?? {}) as Record<string, unknown>;
 
   const customer: CheckoutCustomer = {
@@ -91,7 +92,8 @@ function parseCustomer(value: unknown): CheckoutCustomer | { error: string } {
   const firstError = Object.values(validateCheckoutCustomer(customer))[0];
   if (firstError) return { error: firstError };
 
-  if (!SHIPPING_COUNTRY_CODES.includes(customer.country as (typeof SHIPPING_COUNTRY_CODES)[number])) {
+  // The admin's shipping list from Settings, not the full catalogue of countries the app knows.
+  if (!allowedCountries.includes(customer.country)) {
     return { error: 'We do not ship to that country yet — please contact us instead.' };
   }
 
@@ -195,6 +197,16 @@ export async function POST(req: NextRequest) {
 
     const intent: CheckoutIntent = body?.intent === 'enquiry' ? 'enquiry' : 'payment';
 
+    // The admin can close either route from Settings; enforce it here rather than trusting the
+    // form to have hidden the button.
+    const settings = { ...DEFAULT_SETTINGS, ...((await settingsRef().get()).data() ?? {}) };
+    if (intent === 'payment' && !settings.cardPaymentsEnabled) {
+      return NextResponse.json({ error: 'Card payments are switched off right now.' }, { status: 503 });
+    }
+    if (intent === 'enquiry' && !settings.callbackRequestsEnabled) {
+      return NextResponse.json({ error: 'Callback requests are switched off right now.' }, { status: 503 });
+    }
+
     // Only the card route needs Stripe, so an unconfigured deployment can still take enquiries.
     if (intent === 'payment' && !isStripeConfigured()) {
       return NextResponse.json({ error: STRIPE_SETUP_MESSAGE }, { status: 503 });
@@ -203,7 +215,7 @@ export async function POST(req: NextRequest) {
     const parsedItems = parseItems(body?.items);
     if (typeof parsedItems === 'string') return NextResponse.json({ error: parsedItems }, { status: 400 });
 
-    const customer = parseCustomer(body?.customer);
+    const customer = parseCustomer(body?.customer, settings.shippingCountries);
     if ('error' in customer) return NextResponse.json({ error: customer.error }, { status: 400 });
 
     const priced = await priceCart(parsedItems);

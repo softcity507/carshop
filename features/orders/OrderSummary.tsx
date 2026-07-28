@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import { FiAlertTriangle, FiEdit2, FiInbox, FiRefreshCw, FiSave, FiTrash2, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiEdit2, FiInbox, FiRefreshCw, FiRotateCcw, FiSave, FiTrash2, FiX } from 'react-icons/fi';
 import { useAuth } from '@/hooks/useAuth';
 import { SHIPPING_COUNTRIES } from '@/lib/constants';
 import { formatMoney } from '@/lib/helpers';
@@ -151,6 +151,22 @@ export function OrderSummary() {
     }
   }
 
+  /** Recorded after the money has actually been moved (or refused) in Stripe. */
+  async function handleRefundDecision(order: Order, decision: 'approved' | 'declined', note: string) {
+    setBusyId(order.id);
+    setActionError(null);
+    try {
+      const saved = await OrderService.resolveRefund(order.id, decision, note);
+      setOrders((current) => current.map((entry) => (entry.id === order.id ? saved : entry)));
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Unable to record that decision.');
+      return false;
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function handleDelete(order: Order) {
     setBusyId(order.id);
     setActionError(null);
@@ -258,6 +274,9 @@ export function OrderSummary() {
                       {order.paymentStatus}
                     </Pill>
                     {order.intent === 'enquiry' && <Pill className="bg-chip text-muted">callback</Pill>}
+                    {order.refund?.status === 'requested' && (
+                      <Pill className="bg-warning-soft text-warning">refund asked</Pill>
+                    )}
                   </div>
                 </button>
               );
@@ -271,6 +290,7 @@ export function OrderSummary() {
               busy={busyId === selected.id}
               onSave={handleSave}
               onDelete={handleDelete}
+              onRefundDecision={handleRefundDecision}
             />
           )}
         </div>
@@ -292,12 +312,15 @@ function OrderDetail({
   busy,
   onSave,
   onDelete,
+  onRefundDecision,
 }: {
   order: Order;
   busy: boolean;
   onSave: (order: Order, patch: Parameters<typeof OrderService.updateOrder>[1]) => Promise<boolean>;
   onDelete: (order: Order) => void;
+  onRefundDecision: (order: Order, decision: 'approved' | 'declined', note: string) => Promise<boolean>;
 }) {
+  const [refundNote, setRefundNote] = useState('');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CheckoutCustomer>({ ...EMPTY_CUSTOMER, ...order.customer });
   const [note, setNote] = useState(order.adminNote ?? '');
@@ -348,6 +371,60 @@ function OrderDetail({
           <Pill className={PAYMENT_STYLE[order.paymentStatus] ?? PAYMENT_STYLE.unpaid}>{order.paymentStatus}</Pill>
         </div>
       </div>
+
+      {order.refund?.status === 'requested' && (
+        <section className="mt-8 rounded-lg border border-warning/40 bg-warning-soft p-5">
+          <p className="flex items-center gap-2 text-sm font-bold text-warning">
+            <FiRotateCcw size={15} /> The buyer has asked for a refund
+          </p>
+          <p className="mt-2 whitespace-pre-line rounded-lg bg-panel/70 p-4 text-sm leading-6 text-ink">
+            {order.refund.reason}
+          </p>
+          <p className="mt-2 text-[11px] text-muted">Requested {formatDateTime(order.refund.requestedAt)}</p>
+
+          <label className="field-label mt-5 block" htmlFor={`refund-note-${order.id}`}>
+            Reply to the buyer (optional)
+          </label>
+          <textarea
+            id={`refund-note-${order.id}`}
+            rows={2}
+            className="field-input mt-2 resize-y"
+            maxLength={1000}
+            value={refundNote}
+            onChange={(event) => setRefundNote(event.target.value)}
+          />
+
+          <p className="mt-3 text-xs text-muted">
+            Issue the refund in Stripe first — recording it here only updates CarShop.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => onRefundDecision(order, 'approved', refundNote).then(() => setRefundNote(''))}
+              disabled={busy}
+              className="btn-primary"
+            >
+              <FiRotateCcw size={14} /> {busy ? 'Saving…' : 'Mark as refunded'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onRefundDecision(order, 'declined', refundNote).then(() => setRefundNote(''))}
+              disabled={busy}
+              className="btn-ghost"
+            >
+              <FiX size={14} /> Decline
+            </button>
+          </div>
+        </section>
+      )}
+
+      {order.refund && order.refund.status !== 'requested' && (
+        <p className="mt-8 rounded-lg border border-line bg-chip/50 px-4 py-3 text-xs text-muted">
+          Refund {order.refund.status} on {formatDateTime(order.refund.resolvedAt)}.
+          {order.refund.resolutionNote ? ` “${order.refund.resolutionNote}”` : ''}
+        </p>
+      )}
 
       {/* Pipeline moves are one-click — they are the edit an admin makes most often. */}
       <section className="mt-8 grid gap-4 sm:grid-cols-2">

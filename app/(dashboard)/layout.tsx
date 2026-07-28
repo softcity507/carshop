@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/admin-products', label: 'Products' },
   { href: '/orders', label: 'Orders' },
   { href: '/messages', label: 'Messages' },
+  { href: '/profile', label: 'My Profile' },
   { href: '/settings', label: 'Settings' },
 ];
 
@@ -19,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <AdminGuard>
-      <div className="flex min-h-screen bg-canvas">
+      <div className="flex flex-1 bg-canvas">
         {/* Sticky (not fixed) so the aside stays in flow and the content column keeps its own width.
             top-20 clears the 5rem sticky site header; self-start stops the flex row from stretching
             the aside to full height, which would leave it nothing to scroll against. */}

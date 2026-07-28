@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 
 export default function AboutPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-1 flex-col bg-gray-50">
        <main className="flex-1 max-w-4xl mx-auto p-6 md:p-12 w-full">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">
           <h1 className="text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-[#031636] mb-6">

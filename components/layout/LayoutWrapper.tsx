@@ -22,5 +22,8 @@ export default function LayoutWrapper({
     return <GlobalLoader />;
   }
 
-  return <>{children}</>;
+  // `flex-1` claims whatever height the header leaves, and the inner `flex flex-col` passes that
+  // height on to the page. Without this the page is not part of the body's flex chain at all, so
+  // a short page can't push its footer to the bottom of the window.
+  return <div className="flex flex-1 flex-col">{children}</div>;
 }

@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart';
 import { SHIPPING_COUNTRIES } from '@/lib/constants';
 import { formatMoney } from '@/lib/helpers';
 import { CheckoutError, CheckoutService } from '@/services/checkout.service';
+import { SettingsService } from '@/services/settings.service';
 import {
   CUSTOMER_LIMITS,
   validateCheckoutCustomer,
@@ -43,14 +44,47 @@ export function CheckoutForm() {
   /** Which of the two buttons is working, so only that one shows a spinner. */
   const [busy, setBusy] = useState<CheckoutIntent | null>(null);
   const [enquiryOrderId, setEnquiryOrderId] = useState<string | null>(null);
+  /** Which checkout routes and countries the admin has left open — the server enforces this too. */
+  const [routes, setRoutes] = useState({ card: true, callback: true });
+  const [countryCodes, setCountryCodes] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    SettingsService.getSettings()
+      .then((settings) => {
+        if (!active) return;
+        setRoutes({ card: settings.cardPaymentsEnabled, callback: settings.callbackRequestsEnabled });
+        setCountryCodes(settings.shippingCountries);
+      })
+      // Everything stays visible if settings can't be read; the server still has the final say.
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const countries = countryCodes
+    ? SHIPPING_COUNTRIES.filter((country) => countryCodes.includes(country.code))
+    : SHIPPING_COUNTRIES;
 
   // Prefilling by derivation rather than by effect: the account details are already known at
   // render time, so seeding state from them would only cause an extra pass.
-  const customer: CheckoutCustomer = {
+  const draft: CheckoutCustomer = {
     ...EMPTY,
     fullName: user?.displayName ?? '',
     email: user?.email ?? '',
     ...typed,
+  };
+
+  // The default country may not be one the store ships to, which would leave the select showing
+  // a value it has no option for. Fall back to the first country that is actually offered.
+  const customer: CheckoutCustomer = {
+    ...draft,
+    country: countries.some((country) => country.code === draft.country)
+      ? draft.country
+      : countries[0]?.code ?? draft.country,
   };
 
   // Stripe sends abandoned payments back here, with the order already saved.
@@ -90,7 +124,7 @@ export function CheckoutForm() {
 
       if (result.intent === 'payment' && result.url) {
         // Leave `busy` set — the browser is on its way out to Stripe.
-        window.location.href = result.url;
+        window.location.assign(result.url);
         return;
       }
 
@@ -129,7 +163,10 @@ export function CheckoutForm() {
         </p>
         <p className="mt-6 text-xs uppercase tracking-[0.1em] text-faint">Order {enquiryOrderId}</p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link href="/products" className="btn-primary">
+          <Link href="/orderStausAndHistory" className="btn-primary">
+            Track this order
+          </Link>
+          <Link href="/products" className="btn-outline">
             Continue shopping
           </Link>
         </div>
@@ -210,7 +247,7 @@ export function CheckoutForm() {
               onChange={(event) => update('country', event.target.value)}
               autoComplete="country"
             >
-              {SHIPPING_COUNTRIES.map((country) => (
+              {countries.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.name}
                 </option>
@@ -298,33 +335,49 @@ export function CheckoutForm() {
           </span>
         </div>
 
-        <button type="button" onClick={() => submit('payment')} disabled={busy !== null} className="btn-primary mt-6 w-full">
-          {busy === 'payment' ? (
-            <>
-              <FiLoader size={14} className="animate-spin" /> Redirecting to Stripe
-            </>
-          ) : (
-            <>
-              <FiLock size={13} /> Pay securely with Stripe
-            </>
-          )}
-        </button>
+        {routes.card && (
+          <button
+            type="button"
+            onClick={() => submit('payment')}
+            disabled={busy !== null}
+            className="btn-primary mt-6 w-full"
+          >
+            {busy === 'payment' ? (
+              <>
+                <FiLoader size={14} className="animate-spin" /> Redirecting to Stripe
+              </>
+            ) : (
+              <>
+                <FiLock size={13} /> Pay securely with Stripe
+              </>
+            )}
+          </button>
+        )}
 
-        <button type="button" onClick={() => submit('enquiry')} disabled={busy !== null} className="btn-outline mt-3 w-full">
-          {busy === 'enquiry' ? (
-            <>
-              <FiLoader size={14} className="animate-spin" /> Sending
-            </>
-          ) : (
-            <>
-              <FiPhoneCall size={13} /> Request a callback instead
-            </>
-          )}
-        </button>
+        {routes.callback && (
+          <button
+            type="button"
+            onClick={() => submit('enquiry')}
+            disabled={busy !== null}
+            className={`btn-outline w-full ${routes.card ? 'mt-3' : 'mt-6'}`}
+          >
+            {busy === 'enquiry' ? (
+              <>
+                <FiLoader size={14} className="animate-spin" /> Sending
+              </>
+            ) : (
+              <>
+                <FiPhoneCall size={13} /> {routes.card ? 'Request a callback instead' : 'Request a callback'}
+              </>
+            )}
+          </button>
+        )}
 
-        <p className="mt-3 text-center text-[11px] leading-5 text-faint">
-          Prefer to talk it through? We&apos;ll save the order and call you — nothing is charged.
-        </p>
+        {routes.callback && (
+          <p className="mt-3 text-center text-[11px] leading-5 text-faint">
+            Prefer to talk it through? We&apos;ll save the order and call you — nothing is charged.
+          </p>
+        )}
 
         <Link href="/cart" className="btn-ghost mt-4 w-full">
           Back to cart

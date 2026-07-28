@@ -112,11 +112,11 @@ export function CheckoutSuccess() {
       <p className="mt-6 text-xs uppercase tracking-[0.1em] text-faint">Order {confirmation.orderId}</p>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Link href="/products" className="btn-primary">
-          Continue shopping
+        <Link href="/orderStausAndHistory" className="btn-primary">
+          Track this order
         </Link>
-        <Link href="/contact" className="btn-outline">
-          Questions? Contact us
+        <Link href="/products" className="btn-outline">
+          Continue shopping
         </Link>
       </div>
     </div>

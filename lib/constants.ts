@@ -29,3 +29,18 @@ export const SHIPPING_COUNTRIES = [
 ] as const;
 
 export const SHIPPING_COUNTRY_CODES = SHIPPING_COUNTRIES.map((country) => country.code);
+
+/** Currencies the store can price in. Stripe bills a session in exactly one of these. */
+export const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'Pound Sterling' },
+  { code: 'AED', name: 'UAE Dirham' },
+  { code: 'SAR', name: 'Saudi Riyal' },
+  { code: 'PKR', name: 'Pakistani Rupee' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+] as const;
+
+export const CURRENCY_CODES = CURRENCIES.map((currency) => currency.code);

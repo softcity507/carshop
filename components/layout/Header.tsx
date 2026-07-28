@@ -77,6 +77,17 @@ export function Header() {
           >
             Contact
           </Link>
+
+          {/* Only worth showing once there is an account to hang orders off. */}
+          {user && (
+            <Link
+              href="/orderStausAndHistory"
+              className="rounded-full px-4 py-2 text-slate-200 transition hover:bg-slate-800 hover:text-white"
+            >
+              My Orders
+            </Link>
+          )}
+
           <CartButton />
 
            {admin && (
@@ -159,6 +170,16 @@ export function Header() {
             >
               Contact
             </Link>
+
+            {user && (
+              <Link
+                href="/orderStausAndHistory"
+                className="rounded-lg px-4 py-3 text-white hover:bg-slate-800"
+                onClick={() => setOpen(false)}
+              >
+                My Orders
+              </Link>
+            )}
 
             <Link
               href="/cart"

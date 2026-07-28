@@ -1,17 +1,15 @@
 "use client";
-
+import Link from 'next/link';
 import Image from "next/image";
 import {
-  Search,
-  Car,
+   Car,
   Wrench,
-  MapPin,
-  ArrowRight,
+  
 } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+    <section className="relative overflow-hidden">
       {/* Background Blur */}
       <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
       <div className="absolute right-0 bottom-0 h-96 w-96 rounded-full bg-orange-500/20 blur-3xl" />
@@ -26,14 +24,14 @@ export default function Hero() {
               🚗 Pakistan's Smart Car Marketplace
             </span>
 
-            <h1 className="mt-6 text-5xl font-extrabold leading-tight text-white lg:text-7xl">
+            <h1 className="mt-6 text-5xl font-extrabold leading-tight text-[#1B1E2E] lg:text-7xl">
               Buy Cars &
               <span className="block text-blue-400">
                 Genuine Spare Parts
               </span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-8 text-gray-300">
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[#535B84]">
               Purchase brand-new and used vehicles, shop genuine spare
               parts, compare prices, and enjoy secure online shopping with
               trusted dealers across Pakistan.
@@ -44,9 +42,9 @@ export default function Hero() {
             {/* Buttons */}
             <div className="mt-8 flex flex-wrap gap-4">
 
-              <button className="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white hover:bg-blue-700">
+              <Link href="/products" className="rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white hover:bg-blue-700">
                 Browse Cars
-              </button>
+              </Link>
 
               <button className="rounded-xl border border-white/30 px-8 py-4 font-semibold text-white hover:bg-white hover:text-black">
                 Shop Spare Parts
@@ -58,23 +56,23 @@ export default function Hero() {
             <div className="mt-14 grid grid-cols-2 gap-6 md:grid-cols-4">
 
               <div>
-                <h3 className="text-3xl font-bold text-white">20K+</h3>
-                <p className="text-gray-400">Cars Listed</p>
+                <h3 className="text-3xl font-bold text-[#1B1E2E]">20K+</h3>
+                <p className="text-[#535B84]">Cars Listed</p>
               </div>
 
               <div>
-                <h3 className="text-3xl font-bold text-white">50K+</h3>
-                <p className="text-gray-400">Spare Parts</p>
+                <h3 className="text-3xl font-bold text-[#1B1E2E]">50K+</h3>
+                <p className="text-[#535B84]">Spare Parts</p>
               </div>
 
               <div>
-                <h3 className="text-3xl font-bold text-white">500+</h3>
-                <p className="text-gray-400">Dealers</p>
+                <h3 className="text-3xl font-bold text-[#1B1E2E]">500+</h3>
+                <p className="text-[#535B84]">Dealers</p>
               </div>
 
               <div>
-                <h3 className="text-3xl font-bold text-white">24/7</h3>
-                <p className="text-gray-400">Support</p>
+                <h3 className="text-3xl font-bold text-[#1B1E2E]">24/7</h3>
+                <p className="text-[#535B84]">Support</p>
               </div>
 
             </div>

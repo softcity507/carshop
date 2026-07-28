@@ -151,11 +151,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+    <main className="relative flex flex-1 flex-col overflow-hidden bg-slate-950 text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.25),transparent_40%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(239,68,68,0.20),transparent_35%)]" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-4 py-8 sm:px-6 md:px-10 lg:px-12 xl:px-16">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-8 sm:px-6 md:px-10 lg:px-12 xl:px-16">
         <div className="grid w-full items-center gap-12 lg:grid-cols-2">
           <section className="order-2 text-center lg:order-1 lg:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300 sm:text-sm">

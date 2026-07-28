@@ -1,25 +1,18 @@
 import React from 'react';
+import { ActivityLog } from '@/features/settings/ActivityLog';
+import { StoreSettingsForm } from '@/features/settings/StoreSettingsForm';
 
 export default function DashboardSettingsPage() {
   return (
     <div>
       <h1 className="page-title">Settings</h1>
-      <p className="page-subtitle mb-8">Configure store details and support contacts.</p>
+      <p className="page-subtitle mb-8">
+        Store details, checkout rules and the running log of what happens day to day.
+      </p>
 
-      <div className="card max-w-xl space-y-5 p-6">
-        <label className="block space-y-2">
-          <span className="field-label">Store Name</span>
-          <input type="text" defaultValue="CarShop Auto Dealership" className="field-input" />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="field-label">Support Email</span>
-          <input type="email" defaultValue="support@carshop.example" className="field-input" />
-        </label>
-
-        <button type="button" className="btn-primary">
-          Save Changes
-        </button>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] xl:items-start">
+        <StoreSettingsForm />
+        <ActivityLog />
       </div>
     </div>
   );
