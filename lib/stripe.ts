@@ -1,8 +1,7 @@
 import Stripe from 'stripe';
 
 export const STRIPE_SETUP_MESSAGE =
-  'Stripe is not configured. Set STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET for fulfilment) in ' +
-  '.env.local, then restart the dev server.';
+  'Stripe is not configured. Set STRIPE_SECRET_KEY in .env.local, then restart the dev server.';
 
 export function isStripeConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY);

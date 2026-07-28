@@ -27,12 +27,19 @@ Add these to `.env.local` (and to the Vercel project's environment variables), t
 | Variable | Required | What it does |
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | for card payments | Server-side Stripe key (`sk_test_…` / `sk_live_…`). Without it the pay button returns a 503 and only callback requests work. |
-| `STRIPE_WEBHOOK_SECRET` | for fulfilment | Signing secret for `/api/stripe/webhook`. Without it orders are never marked paid and stock is never drawn down. |
 | `NEXT_PUBLIC_APP_URL` | optional | Absolute base for Stripe's return URLs. Falls back to `VERCEL_URL`, then the request origin. |
 
-Point a Stripe webhook endpoint at `https://<your-domain>/api/stripe/webhook` subscribed to
+### Fulfilment (webhook)
+
+Taking payments needs only the key above. Marking those payments as settled needs the webhook:
+point a Stripe endpoint at `https://<your-domain>/api/stripe/webhook` subscribed to
 `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-`checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`.
+`checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`, then set
+its signing secret as `STRIPE_WEBHOOK_SECRET`.
+
+That secret is what proves an event really came from Stripe. Without it the route refuses every
+event (503), so orders stay unpaid and stock is never drawn down — you would settle each order by
+hand in the admin panel.
 
 Locally, forward events instead:
 
