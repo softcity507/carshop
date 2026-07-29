@@ -97,11 +97,12 @@ function parseCustomer(value: unknown): CheckoutCustomer | { error: string } {
     email: str(raw.email, CUSTOMER_LIMITS.email).toLowerCase(),
     phone: str(raw.phone, CUSTOMER_LIMITS.phone),
     addressLine1: str(raw.addressLine1, CUSTOMER_LIMITS.addressLine1),
-    addressLine2: str(raw.addressLine2, CUSTOMER_LIMITS.addressLine2) || undefined,
+    // Empty strings, not `undefined` — this object is written to Firestore whole.
+    addressLine2: str(raw.addressLine2, CUSTOMER_LIMITS.addressLine2),
     city: str(raw.city, CUSTOMER_LIMITS.city),
     postalCode: str(raw.postalCode, CUSTOMER_LIMITS.postalCode),
     country: str(raw.country, CUSTOMER_LIMITS.country).toUpperCase(),
-    notes: str(raw.notes, CUSTOMER_LIMITS.notes) || undefined,
+    notes: str(raw.notes, CUSTOMER_LIMITS.notes),
   };
 
   const firstError = Object.values(validateCheckoutCustomer(customer))[0];

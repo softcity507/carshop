@@ -76,16 +76,18 @@ function parseItems(value: unknown): CheckoutRequestItem[] | string {
 function parseCustomer(value: unknown, allowedCountries: string[]): CheckoutCustomer | { error: string } {
   const raw = (value ?? {}) as Record<string, unknown>;
 
+  // The optional fields stay as empty strings rather than becoming `undefined`: this object is
+  // written to Firestore whole, and an omitted key there is a value error, not an empty field.
   const customer: CheckoutCustomer = {
     fullName: str(raw.fullName, CUSTOMER_LIMITS.fullName),
     email: str(raw.email, CUSTOMER_LIMITS.email).toLowerCase(),
     phone: str(raw.phone, CUSTOMER_LIMITS.phone),
     addressLine1: str(raw.addressLine1, CUSTOMER_LIMITS.addressLine1),
-    addressLine2: str(raw.addressLine2, CUSTOMER_LIMITS.addressLine2) || undefined,
+    addressLine2: str(raw.addressLine2, CUSTOMER_LIMITS.addressLine2),
     city: str(raw.city, CUSTOMER_LIMITS.city),
     postalCode: str(raw.postalCode, CUSTOMER_LIMITS.postalCode),
     country: str(raw.country, CUSTOMER_LIMITS.country).toUpperCase(),
-    notes: str(raw.notes, CUSTOMER_LIMITS.notes) || undefined,
+    notes: str(raw.notes, CUSTOMER_LIMITS.notes),
   };
 
   // Never trust the form's own check — the shared validator runs again here.
@@ -137,7 +139,9 @@ async function priceCart(items: CheckoutRequestItem[]): Promise<{ lines: PricedL
         quantity,
         price,
         name,
-        imageUrl: Array.isArray(data.imageUrls) ? data.imageUrls[0] : undefined,
+        // Same reason as the customer block: a product with no images must not put `undefined`
+        // into the order document.
+        imageUrl: (Array.isArray(data.imageUrls) ? data.imageUrls[0] : '') || '',
       },
     });
   }
@@ -293,7 +297,8 @@ export async function POST(req: NextRequest) {
             phone: customer.phone,
             address: {
               line1: customer.addressLine1,
-              line2: customer.addressLine2,
+              // Stripe wants the key omitted rather than blank when there is no second line.
+              line2: customer.addressLine2 || undefined,
               city: customer.city,
               postal_code: customer.postalCode,
               country: customer.country,

@@ -73,6 +73,20 @@ export function isAdminConfigured() {
   return Boolean(getServiceAccount()) || hasHostedCredentials();
 }
 
+/**
+ * Optional fields are modelled as `field?: string` all over this codebase, so an absent one
+ * naturally arrives as `undefined` — which Firestore rejects outright rather than skipping.
+ * Telling it to drop those keys turns "an optional value was omitted" back into what it should
+ * be: a field that simply isn't written.
+ *
+ * `settings()` may only be called once, and only before the first read or write, so it happens
+ * here on the one path that creates the app.
+ */
+function configure(app: admin.app.App): admin.app.App {
+  app.firestore().settings({ ignoreUndefinedProperties: true });
+  return app;
+}
+
 function getApp(): admin.app.App {
   // `admin.apps` is undefined under some import interop paths, so guard rather than assume an array.
   if (admin.apps?.length) return admin.app();
@@ -89,18 +103,22 @@ function getApp(): admin.app.App {
       );
     }
 
-    return admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-      projectId: serviceAccount.projectId,
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL?.trim() || undefined,
-    });
+    return configure(
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+        projectId: serviceAccount.projectId,
+        databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL?.trim() || undefined,
+      })
+    );
   }
 
   // Hosted environments (Cloud Run / Cloud Functions) supply Application Default Credentials.
   if (hasHostedCredentials()) {
-    return admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
+    return configure(
+      admin.initializeApp({
+        projectId: process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      })
+    );
   }
 
   // Otherwise every Admin call spends ~6s failing an ADC lookup. Fail fast with something actionable.
